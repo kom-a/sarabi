@@ -1,0 +1,20 @@
+ASM=nasm
+
+ROOT_DIR=$PWD
+SRC_DIR=mymoon/src
+BUILD_DIR=$ROOT_DIR/bin
+
+pushd $SRC_DIR/bootloader > /dev/null
+nasm boot.asm -f bin -o $BUILD_DIR/boot.o
+popd > /dev/null
+
+pushd $SRC_DIR/kernel > /dev/null
+nasm kernel_entry.asm -f elf32 -o $BUILD_DIR/kernel_entry.o
+gcc -ffreestanding -m32 -fno-pie -c kernel.c -o $BUILD_DIR/kernel.o
+popd > /dev/null
+
+pushd bin > /dev/null
+ld -o kernel.bin -Ttext 0x1000 -m elf_i386 -s kernel_entry.o kernel.o --oformat binary
+cat boot.o kernel.bin > sarabi
+truncate -s 10000 sarabi
+popd > /dev/null

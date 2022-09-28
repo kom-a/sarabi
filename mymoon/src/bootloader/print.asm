@@ -1,3 +1,5 @@
+
+[bits 16]
 ; Prints string pointed by bx
 print_string:
 	pusha
@@ -27,43 +29,43 @@ to_ascii:
 	ret
 
 ; Prints value at dx as hex
-print_hex:
-	pusha
-
-	mov bx, HEX_OUT
-	add bx, 2
-
-	mov al, dh
-	shr al, 4
-	and al, 0x0f
-	call to_ascii
-	mov [bx], al
-	add bx, 1
-
-	mov al, dh
-	and al, 0x0f
-	call to_ascii
-	mov [bx], al
-	add bx, 1
-
-	mov al, dl
-	shr al, 4
-	and al, 0x0f
-	call to_ascii
-	mov [bx], al
-	add bx, 1
-
-	mov al, dl
-	and al, 0x0f
-	call to_ascii
-	mov [bx], al
-	add bx, 1
-
-
-	mov bx, HEX_OUT
-	call print_string
-	popa
-	ret
+;print_hex:
+;	pusha
+;
+;	mov bx, HEX_OUT
+;	add bx, 2
+;
+;	mov al, dh
+;	shr al, 4
+;	and al, 0x0f
+;	call to_ascii
+;	mov [bx], al
+;	add bx, 1
+;
+;	mov al, dh
+;	and al, 0x0f
+;	call to_ascii
+;	mov [bx], al
+;	add bx, 1
+;
+;	mov al, dl
+;	shr al, 4
+;	and al, 0x0f
+;	call to_ascii
+;	mov [bx], al
+;	add bx, 1
+;
+;	mov al, dl
+;	and al, 0x0f
+;	call to_ascii
+;	mov [bx], al
+;	add bx, 1
+;
+;
+;	mov bx, HEX_OUT
+;	call print_string
+;	popa
+;	ret
 
 HEX_OUT:
 db "0x0000", 10, 13, 0
@@ -78,7 +80,7 @@ print_string_pm:
 	pusha
 	mov edx, VIDEO_MEMORY		; Set edx to the start of vid mem.
 	print_string_pm_loop:
-	mov al, [ebx]			; Store the char at EBX in AL
+	mov al, [ebx]				; Store the char at EBX in AL
 	mov ah, WHITE_ON_BLACK		; Store the attributes in AH
 	cmp al, 0					; if (al == 0) , at end of string , so
 	je print_string_pm_done		; jump to done
