@@ -26,7 +26,7 @@ disk_load:
 	jmp $
 
 DISK_ERROR_MSG:
-db "Disk read error!", 10, 13, 0
+db "Disk error!", 10, 13, 0
 
 DISK_READ_ERROR:
 db "Disk read error!", 10, 13, 0

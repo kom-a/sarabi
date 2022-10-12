@@ -1,5 +1,3 @@
-[bits 16]
-
 gdt_start:
 
 gdt_null:
@@ -23,7 +21,7 @@ gdt_data:
 	; Same as code segment except for the type flags:
 	; type flags : ( code )0 ( expand down )0 ( writable )1 ( accessed )0 -> 0010 b
 
-	dw 0 xffff		; Limit ( bits 0 -15)
+	dw 0xffff		; Limit ( bits 0 -15)
 	dw 0x00			; Base ( bits 0 -15)
 	db 0x00			; Base ( bits 16 -23)
 	db 10010010b	; 1st flags , type flags
