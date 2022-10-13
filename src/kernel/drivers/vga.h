@@ -35,6 +35,7 @@ enum VgaColor
     White
 };
 
+int vga_cursor_to_offset(VgaCursorPosition cursor);
 void vga_set_cursor(unsigned int offset);
 void vga_set_cursor_position(VgaCursorPosition cursor);
 
@@ -42,7 +43,9 @@ int vga_get_cursor();
 VgaCursorPosition vga_get_cursor_position();
 
 void vga_put_char_at_video_memory(char character, enum VgaColor foreground, int offset);
+void vga_print_char(char c, enum VgaColor color);
 void vga_print_string(char* string);
 
 void vga_set_clear_color(enum VgaColor clear_color);
 void vga_clear_screen();
+void vga_scroll_line(int* offset);
