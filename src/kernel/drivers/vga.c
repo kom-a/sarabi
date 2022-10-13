@@ -1,5 +1,7 @@
 #include "vga.h"
 
+static enum VgaColor s_ClearColor = Black;
+
 void vga_set_cursor(unsigned int offset)
 {
     char high = (offset >> 8) & 0xff;
@@ -47,11 +49,11 @@ VgaCursorPosition vga_get_cursor_position()
     position.Column = offset % VGA_ROWS;
 }
 
-void vga_put_char_at_video_memory(char character, enum VgaColor foreground, enum VgaColor background, int offset)
+void vga_put_char_at_video_memory(char character, enum VgaColor foreground, int offset)
 {
     unsigned char *vidmem = (unsigned char *) VGA_MEMORY_ADDRESS;
     vidmem[offset * 2] = character;
-    vidmem[offset * 2 + 1] = (background << 4) | foreground;
+    vidmem[offset * 2 + 1] = (s_ClearColor << 4) | foreground;
 }
 
 void vga_print_string(char* string) 
@@ -69,7 +71,7 @@ void vga_print_string(char* string)
         }
         else 
         {
-            vga_put_char_at_video_memory(string[i], White, DarkGray, offset);
+            vga_put_char_at_video_memory(string[i], White, offset);
             offset++;
         }
         
@@ -78,13 +80,18 @@ void vga_print_string(char* string)
     vga_set_cursor(offset);
 }
 
-void vga_clear_screen(enum VgaColor clear_color)
+void vga_set_clear_color(enum VgaColor color)
+{
+    s_ClearColor = color;
+}
+
+void vga_clear_screen()
 {
     vga_set_cursor(0);
 
     for(int i = 0; i < VGA_ROWS * VGA_COLUMNS; i++)
     {
-        vga_put_char_at_video_memory(' ', Black, clear_color, i);
+        vga_put_char_at_video_memory(' ', Black, i);
     }
 
     vga_set_cursor(0);

@@ -2,7 +2,9 @@
 
 int kmain()
 {
-	vga_clear_screen(LightGray);
+	vga_set_clear_color(DarkGray);
+
+	vga_clear_screen();
 
 	vga_print_string("Hello world\nlol");
 	
