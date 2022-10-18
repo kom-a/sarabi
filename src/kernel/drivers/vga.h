@@ -47,5 +47,6 @@ void vga_print_char(char c, enum VgaColor color);
 void vga_print_string(char* string);
 
 void vga_set_clear_color(enum VgaColor clear_color);
+void vga_set_color(enum VgaColor color);
 void vga_clear_screen();
 void vga_scroll_line(int* offset);

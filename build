@@ -13,6 +13,7 @@ popd > /dev/null
 pushd $SRC_DIR/kernel > /dev/null
 nasm kernel_entry.asm -f elf32 -o $BUILD_DIR/kernel_entry.o
 gcc -ffreestanding -m32 -fno-pie -c kernel.c -o $BUILD_DIR/kernel.o
+gcc -ffreestanding -m32 -fno-pie -c PIC.c -o $BUILD_DIR/PIC.o
 popd > /dev/null
 
 pushd $SRC_DIR/kernel/drivers > /dev/null
@@ -21,7 +22,7 @@ gcc -ffreestanding -m32 -fno-pie -c vga.c -o $BUILD_DIR/vga.o
 popd
 
 pushd bin > /dev/null
-ld -o kernel.bin -T ../link.ld -m elf_i386 -s kernel_entry.o kernel.o driver.o vga.o --oformat binary
+ld -o kernel.bin -T ../link.ld -m elf_i386 -s kernel_entry.o kernel.o driver.o vga.o PIC.o --oformat binary
 cat boot.o kernel.bin > sarabi
 truncate -s 12000 sarabi
 popd > /dev/null

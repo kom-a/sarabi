@@ -1,5 +1,9 @@
 #include "drivers/vga.h"
 #include "inttypes.h"
+#include "PIC.h"
+
+extern void AsmHandler();
+extern void KeyboardHandlerAsm();
 
 void to_hex_str(uint32_t value, char* str)
 {
@@ -16,34 +20,60 @@ void to_hex_str(uint32_t value, char* str)
 	str[str_index] = '\0';
 }
 
+void DefaultInterruptHandler()
+{
+// 	vga_print_string("Interrupt occurred\n");
+
+	char str[16];
+	// to_hex_str(gate, str);
+
+	// vga_print_string(str);
+	// vga_print_string("\n");
+
+	for(int i = 0; i < IDT_ENTRIES; i++)
+		PIC_EndOfInterrupt(i);
+}
+
+void KeyboardHandler()
+{
+	vga_print_string("Key pressed\n");
+
+	for(int i = 0; i < IDT_ENTRIES; i++)
+		PIC_EndOfInterrupt(i);
+
+	for(int i = 0; i < 500000000;)
+		i++;
+}
+
 int kmain()
 {
-	vga_set_clear_color(DarkGray);
+	vga_print_string("Welcome to Sarabi OS\n");
 
-	vga_clear_screen();
+	PIC_Remap(0x20);
 
-	uint32_t test = 0x00;
+	for(int i = 0; i < IDT_ENTRIES; i++)
+	{
+		SetIDTGateHandler(i, AsmHandler);
+	}
 
-	vga_print_string("Hello w\norld");
+	SetIDTGateHandler(0x21, KeyboardHandlerAsm);
+
+	IRQ_Mask(0);
+	LoadIDT();
+
+	asm volatile("sti");
+
+	int i  = 0;
 
 	while(1)
 	{
-		uint8_t data = in_port(0x60);
-		uint8_t status = in_port(0x64);
-
 		char str[16];
-		to_hex_str(data, str);
-
-		vga_set_cursor(0);
-
-		vga_print_string("data: ");
+		to_hex_str(i++, str);
 		vga_print_string(str);
 		vga_print_string("\n");
 
-		to_hex_str(status, str);
-		vga_print_string("status: ");
-		vga_print_string(str);
-		vga_print_string("\n");
+		for(int k = 0; k < 10000000; )
+			k++;
 	}
 
  	return 0;

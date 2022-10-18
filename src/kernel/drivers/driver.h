@@ -1,15 +1,10 @@
 #include "../inttypes.h"
 
-unsigned char in_port(unsigned short port);
-void out_port(unsigned short port, unsigned char data);
+unsigned char InPort(unsigned short port);
+void OutPort(unsigned short port, unsigned char data);
 
-typedef struct 
-{
-    uint16_t LowOffset;
-    uint16_t Selector;
-    uint8_t Zero;
-    uint8_t Flags;
-    uint16_t HighOffset;
-} __attribute__((packed)) IDTGate;
-
-void set_idt_gate(int n, uint32_t handler);
+/**
+ * Wait a very small amount of time (1 to 4 microseconds, generally). 
+ * Useful for implementing a small delay for PIC remapping on old hardware or generally as a simple but imprecise wait. 
+ **/
+void IOWait();
