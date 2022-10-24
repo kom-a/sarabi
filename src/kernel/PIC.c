@@ -1,8 +1,57 @@
 #include "PIC.h"
 
 #include "drivers/driver.h"
+#include "drivers/vga.h"
 
-static IDTGate s_IDT[IDT_ENTRIES];
+IDTGate IDT[IDT_ENTRIES];
+IDTRegister IDTReg;
+
+isr_t InterruptHandlers[256];
+
+static char* ExceptionMessages[] = {
+    "Division By Zero",
+    "Debug",
+    "Non Maskable Interrupt",
+    "Breakpoint",
+    "Into Detected Overflow",
+    "Out of Bounds",
+    "Invalid Opcode",
+    "No Coprocessor",
+
+    "Double Fault",
+    "Coprocessor Segment Overrun",
+    "Bad TSS",
+    "Segment Not Present",
+    "Stack Fault",
+    "General Protection Fault",
+    "Page Fault",
+    "Unknown Interrupt",
+
+    "Coprocessor Fault",
+    "Alignment Check",
+    "Machine Check",
+    "Reserved",
+    "Reserved",
+    "Reserved",
+    "Reserved",
+    "Reserved",
+
+    "Reserved",
+    "Reserved",
+    "Reserved",
+    "Reserved",
+    "Reserved",
+    "Reserved",
+    "Reserved",
+    "Reserved"
+};
+
+void IRQ_Handler(uint8_t irq)
+{
+    vga_print_string(ExceptionMessages[irq]);
+    vga_print_string("\n");
+    PIC_EndOfInterrupt(irq);
+}
 
 void PIC_Remap(int offset)
 {
@@ -84,25 +133,81 @@ void IRQ_ClearMaskLine(uint8_t irqLine)
 
 void LoadIDT()
 {
-    struct {
-        uint16_t Length;
-        void*    Base;
-    } __attribute__((packed)) IDTR = { sizeof(IDTGate) * IDT_ENTRIES - 1, s_IDT };
- 
-    asm ( "lidt %0" : : "m"(IDTR) );
+    IDTReg.Base = (uint32_t) &IDT;
+    IDTReg.Limit = IDT_ENTRIES * sizeof(IDTGate) - 1;
+    /* Don't make the mistake of loading &idt -- always load &idt_reg */
+    asm volatile("lidt (%0)" : : "r" (&IDTReg));
 }
 
-void SetIDTGateHandler(uint32_t gate, void (*handler)(void))
+void SetIDTGateHandler(uint32_t gate, uint32_t handler)
 {
-    uint32_t address = (uint32_t)handler;
-
-    s_IDT[gate].LowOffset = address & 0xffff;
-    s_IDT[gate].Selector = 0x08; // GDT kernel code segment
-    s_IDT[gate].Zero = 0;
+    IDT[gate].LowOffset = handler & 0xffff;
+    IDT[gate].Selector = 0x08; // GDT kernel code segment
+    IDT[gate].Zero = 0;
 
     // 0x8E = 1  00 0 1  110
     //        P DPL 0 D Type
-    s_IDT[gate].Flags = 0x8E;
+    IDT[gate].Flags = 0x8E;
 
-    s_IDT[gate].HighOffset = (address >> 16) & 0xffff;
+    IDT[gate].HighOffset = (handler >> 16) & 0xffff;
+}
+
+void isr_handler(Registers *r) 
+{
+    vga_print_string("received interrupt: ");
+    char s[3];
+    int_to_string(r->IntNum, s);
+    vga_print_string(s);
+    vga_print_string("\n");
+    vga_print_string(ExceptionMessages[r->IntNum]);
+    vga_print_string("\n");
+}
+
+int string_length(char s[]) {
+    int i = 0;
+    while (s[i] != '\0') ++i;
+    return i;
+}
+
+void reverse(char s[]) {
+    int c, i, j;
+    for (i = 0, j = string_length(s)-1; i < j; i++, j--) {
+        c = s[i];
+        s[i] = s[j];
+        s[j] = c;
+    }
+}
+
+void int_to_string(int n, char str[]) {
+    int i, sign;
+    if ((sign = n) < 0) n = -n;
+    i = 0;
+    do {
+        str[i++] = n % 10 + '0';
+    } while ((n /= 10) > 0);
+
+    if (sign < 0) str[i++] = '-';
+    str[i] = '\0';
+
+    reverse(str);
+}
+
+void irq_handler(Registers *r) 
+{
+    /* Handle the interrupt in a more modular way */
+    if (InterruptHandlers[r->IntNum] != 0) {
+        isr_t handler = InterruptHandlers[r->IntNum];
+        handler(r);
+    }
+
+    // EOI
+    if (r->IntNum >= 40) {
+        OutPort(0xA0, 0x20); /* follower */
+    }
+    OutPort(0x20, 0x20); /* leader */
+}
+
+void register_interrupt_handler(uint8_t n, isr_t handler) 
+{
+    InterruptHandlers[n] = handler;
 }

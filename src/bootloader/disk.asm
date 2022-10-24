@@ -1,5 +1,3 @@
-
-[bits 16]
 ; Loads dh sectors to es:bx from drive dl
 disk_load:
 	push dx

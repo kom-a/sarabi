@@ -12,16 +12,14 @@ main:
 	call print_string
 
 	call load_kernel
-
-	; switch to protected mode
 	call switch_to_pm
 
 	jmp $
 
 %include "print.asm"
+%include "disk.asm"
 %include "gdt.asm"
 %include "switch.asm"
-%include "disk.asm"
 
 [bits 16]
 load_kernel:
@@ -29,17 +27,13 @@ load_kernel:
 	call print_string
 
 	mov bx, KERNEL_OFFSET
-	mov dh, 15
+	mov dh, 30
 	mov dl, [BOOT_DRIVE]
 	call disk_load
-
 	ret
 
 [bits 32]
 start_protected_mode:
-	mov ebx, PTCD_MODE_MSG
-	call print_string_pm
-
 	call KERNEL_OFFSET
 
 	jmp $
