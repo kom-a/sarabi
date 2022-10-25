@@ -76,6 +76,23 @@ extern void irq13();
 extern void irq14();
 extern void irq15();
 
+#define IRQ0 32
+#define IRQ1 33
+#define IRQ2 34
+#define IRQ3 35
+#define IRQ4 36
+#define IRQ5 37
+#define IRQ6 38
+#define IRQ7 39
+#define IRQ8 40
+#define IRQ9 41
+#define IRQ10 42
+#define IRQ11 43
+#define IRQ12 44
+#define IRQ13 45
+#define IRQ14 46
+#define IRQ15 47
+
 typedef struct 
 {
     uint16_t LowOffset;
@@ -104,6 +121,7 @@ typedef struct
 } Registers;
 
 
+void PIC_Init(int offset);
 void PIC_Remap(int offset);
 void PIC_EndOfInterrupt(uint8_t irq);
 
@@ -113,6 +131,9 @@ void IRQ_ClearMaskLine(uint8_t irqLine);
 
 void LoadIDT();
 void SetIDTGateHandler(uint32_t gate, uint32_t handler);
+
+void EnableInterrupts();
+void DisableInterrupts();
 
 void isr_handler(Registers *r);
 void int_to_string(int n, char str[]);

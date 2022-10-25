@@ -1,9 +1,14 @@
 #include "vga.h"
+#include "../clib/string.h"
 
-static enum VgaColor s_ClearColor = Black;
-static enum VgaColor s_Color = White;
+static ColorPair s_Color = { VGA_COLOR_WHITE, VGA_COLOR_BLACK };
+static ColorPair s_ColorHeader = { VGA_COLOR_RED, VGA_COLOR_LIGHTGRAY };
+static ColorPair s_ColorFooter =  { VGA_COLOR_YELLOW, VGA_COLOR_DARKGRAY };
 
-void vga_set_cursor(unsigned int offset)
+static char s_HeaderMessage[VGA_WIDTH] = { 0 };
+static char s_FooterMessage[VGA_WIDTH] = { 0 };
+
+static void s_SetCursorByOffset(uint32_t offset)
 {
     char high = (offset >> 8) & 0xff;
     char low = (offset >> 0) & 0xff;
@@ -14,22 +19,22 @@ void vga_set_cursor(unsigned int offset)
     OutPort(VGA_DATA_REGISTER, low);
 }
 
-void vga_set_cursor_position(VgaCursorPosition cursor)
+static uint32_t s_CursorFromCoords(uint8_t x, uint8_t y)
 {
-    if(cursor.Row > VGA_ROWS || cursor.Column > VGA_COLUMNS)
+    if(x > VGA_WIDTH || y > VGA_HEIGHT)
     {
         // TODO: Log this
-        return;
+        return 0; // return zero for now
     }
 
-    unsigned offset = cursor.Row * VGA_COLUMNS + cursor.Column;
-
-    vga_set_cursor(offset);
+    y += VGA_HEADER_SIZE;
+    uint32_t offset = y * VGA_COLUMNS + x;
+    return offset;
 }
 
-int vga_get_cursor()
+static uint32_t s_GetCursorOffsetGlobal()
 {
-    unsigned char high, low;
+    uint8_t high, low;
 
     OutPort(VGA_CTRL_REGISTER, VGA_OFFSET_HIGH);
     high = InPort(VGA_DATA_REGISTER);
@@ -37,104 +42,168 @@ int vga_get_cursor()
     low = InPort(VGA_DATA_REGISTER);
 
     unsigned int offset = (high << 8) | low;
+
     return offset;
 }
 
-VgaCursorPosition vga_get_cursor_position()
-{
-    unsigned int offset = vga_get_cursor();
-    
-    VgaCursorPosition position;
-
-    position.Row = offset / VGA_ROWS;
-    position.Column = offset % VGA_ROWS;
-}
-
-void vga_put_char_at_video_memory(char character, enum VgaColor foreground, int offset)
-{
-    unsigned char *vidmem = (unsigned char *) VGA_MEMORY_ADDRESS;
-    
-    vidmem[offset * 2 + 0] = character;
-    vidmem[offset * 2 + 1] = (s_ClearColor << 4) | foreground;
-}
-
-void vga_print_char(char c, enum VgaColor color)
-{
-    int offset = vga_get_cursor();
-
-    if(c == '\n')
-    {
-        offset += VGA_COLUMNS;
-        offset -= offset % VGA_COLUMNS;
-    }
-    else 
-    {
-        vga_put_char_at_video_memory(c, color, offset);
-        offset += 1;
-    }
-
-    if(offset >= VGA_ROWS * VGA_COLUMNS)
-        vga_scroll_line(&offset);
-    
-    vga_set_cursor(offset);
-}
-
-void vga_print_string(char* string) 
-{
-    int i = 0;
-    while (string[i] != 0) 
-    {
-        vga_print_char(string[i], s_Color);
-        
-        i++;
-    }
-}
-
-void vga_set_clear_color(enum VgaColor color)
-{
-    s_ClearColor = color;
-}
-
-void vga_set_color(enum VgaColor color)
-{
-    s_Color = color;
-}
-
-void vga_clear_screen()
-{
-    vga_set_cursor(0);
-
-    for(int i = 0; i < VGA_ROWS * VGA_COLUMNS; i++)
-    {
-        vga_put_char_at_video_memory(' ', s_Color, i);
-    }
-
-    vga_set_cursor(0);
-}
-
-void vga_scroll_line(int* offset)
+static void s_PutChar(char c, uint32_t offset, ColorPair color)
 {
     unsigned char* vidmem = (unsigned char *) VGA_MEMORY_ADDRESS;
+    
+    vidmem[offset * 2 + 0] = c;
+    vidmem[offset * 2 + 1] = (color.Background << 4) | color.Foreground;
+}
 
-    for(int row = 1; row < VGA_ROWS; row++)
+static void s_ScrollLine(uint32_t* offset)
+{
+    unsigned char* vidmem = (unsigned char*) VGA_MEMORY_ADDRESS;
+
+    for(int i = 1; i < VGA_HEIGHT; i++)
     {
-        for(int col = 0; col < VGA_COLUMNS; col++)
+        int row = i + VGA_HEADER_SIZE;
+        for(int col = 0; col < VGA_WIDTH; col++)
         {
             vidmem[((row - 1) * VGA_COLUMNS + col) * 2 + 0] = vidmem[(row * VGA_COLUMNS + col) * 2 + 0];
             vidmem[((row - 1) * VGA_COLUMNS + col) * 2 + 1] = vidmem[(row * VGA_COLUMNS + col) * 2 + 1];
         }
     }
 
-    for(int i = 0; i < VGA_COLUMNS; i++)
+    for(int col = 0; col < VGA_WIDTH; col++)
     {
-        vidmem[((VGA_ROWS - 1) * VGA_COLUMNS + i) * 2 + 0] = ' ';
-        vidmem[((VGA_ROWS - 1) * VGA_COLUMNS + i) * 2 + 1] = (s_ClearColor << 4) | Black;
+        int row = VGA_HEIGHT + VGA_HEADER_SIZE;
+        vidmem[((row - 1) * VGA_COLUMNS + col) * 2 + 0] = ' ';
+        vidmem[((row - 1) * VGA_COLUMNS + col) * 2 + 1] = (s_Color.Background << 4) | s_Color.Foreground;
     }
 
-    *offset = (VGA_ROWS - 1) * VGA_COLUMNS;
+    *offset = (VGA_ROWS - VGA_FOOTER_SIZE- 1) * VGA_COLUMNS;
 }
 
-int vga_cursor_to_offset(VgaCursorPosition cursor)
+static void s_PrintHeader()
 {
-    return cursor.Row * VGA_COLUMNS + cursor.Column;
+    unsigned char* vidmem = (unsigned char*) VGA_MEMORY_ADDRESS;
+    int len = StringLength(s_HeaderMessage);
+    int start = VGA_WIDTH / 2 - len / 2;
+
+    for(int i = 0; i < VGA_WIDTH; i++)
+        s_PutChar(' ', i, s_ColorHeader);
+
+    for(int i = 0; s_HeaderMessage[i] != '\0'; i++)
+        s_PutChar(s_HeaderMessage[i], start + i, s_ColorHeader);
+}
+
+static void s_PrintFooter()
+{
+    unsigned char* vidmem = (unsigned char*) VGA_MEMORY_ADDRESS;
+    int len = StringLength(s_FooterMessage);
+    int start = VGA_WIDTH - len;
+
+    for(int i = 0; i < VGA_WIDTH; i++)
+        s_PutChar(' ', (VGA_ROWS - 1) * VGA_COLUMNS + i, s_ColorFooter);
+
+    for(int i = 0; s_FooterMessage[i] != '\0'; i++)
+        s_PutChar(s_FooterMessage[i], (VGA_ROWS - 1) * VGA_COLUMNS + start + i, s_ColorFooter);
+}
+
+///////////////////////////////////////////////////////////////////
+
+void VgaSetCursor(uint8_t x, uint8_t y)
+{
+    s_SetCursorByOffset(s_CursorFromCoords(x, y));
+}
+
+void VgaGetCursor(uint8_t* x, uint8_t* y)
+{
+    uint32_t offset = s_GetCursorOffsetGlobal();
+    offset -= VGA_COLUMNS * VGA_HEADER_SIZE;
+
+    *y = offset / VGA_COLUMNS;
+    *x = offset % VGA_COLUMNS;
+}
+
+ColorPair VgaGetColor()
+{
+    return s_Color;
+}
+
+ColorPair VgaGetColorHeader()
+{
+    return s_ColorHeader;
+}
+
+ColorPair VgaGetColorFooter()
+{
+    return s_ColorFooter;
+}
+
+void VgaSetColor(ColorPair color)
+{
+    s_Color = color;
+}
+
+void VgaSetColorHeader(ColorPair color)
+{
+    s_ColorHeader = color;
+}
+
+void VgaSetColorFooter(ColorPair color)
+{
+    s_ColorFooter = color;
+}
+
+void VgaPrint(const char* string)
+{
+    VgaPrintColored(string, s_Color);
+}
+
+void VgaPrintColored(const char* string, ColorPair color)
+{
+    unsigned char* vidmem = (unsigned char *) VGA_MEMORY_ADDRESS;
+    uint32_t offset = s_GetCursorOffsetGlobal();
+
+    for(int i = 0; string[i] != '\0'; i++)
+    {
+        const char c = string[i];
+        if(c == '\n')
+        {
+            offset += VGA_COLUMNS;
+            offset -= offset % VGA_COLUMNS;
+        }
+        else 
+        {
+            s_PutChar(c, offset, color);
+            offset++;
+        }
+
+        if(offset >= (VGA_ROWS - VGA_FOOTER_SIZE) * VGA_COLUMNS)
+            s_ScrollLine(&offset);
+
+        s_SetCursorByOffset(offset);
+    }
+}
+
+void VgaHeaderMessage(const char* headerMessage)
+{
+    StringCopy(s_HeaderMessage, headerMessage);
+}
+
+void VgaFooterMessage(const char* footerMessage)
+{
+    StringCopy(s_FooterMessage, footerMessage);
+}
+
+void VgaClear()
+{
+    for(int i = 0; i < VGA_ROWS; i++)
+    {
+        int row = i + VGA_HEADER_SIZE;
+        for(int col = 0; col < VGA_WIDTH; col++)
+        {
+            s_PutChar(' ', i * VGA_WIDTH + col, s_Color);
+        }
+    }
+
+    s_PrintHeader();
+    s_PrintFooter();
+
+    VgaSetCursor(0, 0);
 }

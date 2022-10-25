@@ -48,9 +48,70 @@ static char* ExceptionMessages[] = {
 
 void IRQ_Handler(uint8_t irq)
 {
-    vga_print_string(ExceptionMessages[irq]);
-    vga_print_string("\n");
+    VgaPrint(ExceptionMessages[irq]);
+    VgaPrint("\n");
     PIC_EndOfInterrupt(irq);
+}
+
+void PIC_Init(int offset)
+{
+    SetIDTGateHandler(0, (uint32_t) isr0);
+    SetIDTGateHandler(1, (uint32_t) isr1);
+    SetIDTGateHandler(2, (uint32_t) isr2);
+    SetIDTGateHandler(3, (uint32_t) isr3);
+    SetIDTGateHandler(4, (uint32_t) isr4);
+    SetIDTGateHandler(5, (uint32_t) isr5);
+    SetIDTGateHandler(6, (uint32_t) isr6);
+    SetIDTGateHandler(7, (uint32_t) isr7);
+    SetIDTGateHandler(8, (uint32_t) isr8);
+    SetIDTGateHandler(9, (uint32_t) isr9);
+    SetIDTGateHandler(10, (uint32_t) isr10);
+    SetIDTGateHandler(11, (uint32_t) isr11);
+    SetIDTGateHandler(12, (uint32_t) isr12);
+    SetIDTGateHandler(13, (uint32_t) isr13);
+    SetIDTGateHandler(14, (uint32_t) isr14);
+    SetIDTGateHandler(15, (uint32_t) isr15);
+    SetIDTGateHandler(16, (uint32_t) isr16);
+    SetIDTGateHandler(17, (uint32_t) isr17);
+    SetIDTGateHandler(18, (uint32_t) isr18);
+    SetIDTGateHandler(19, (uint32_t) isr19);
+    SetIDTGateHandler(20, (uint32_t) isr20);
+    SetIDTGateHandler(21, (uint32_t) isr21);
+    SetIDTGateHandler(22, (uint32_t) isr22);
+    SetIDTGateHandler(23, (uint32_t) isr23);
+    SetIDTGateHandler(24, (uint32_t) isr24);
+    SetIDTGateHandler(25, (uint32_t) isr25);
+    SetIDTGateHandler(26, (uint32_t) isr26);
+    SetIDTGateHandler(27, (uint32_t) isr27);
+    SetIDTGateHandler(28, (uint32_t) isr28);
+    SetIDTGateHandler(29, (uint32_t) isr29);
+    SetIDTGateHandler(30, (uint32_t) isr30);
+    SetIDTGateHandler(31, (uint32_t) isr31);
+
+    // Remap the PIC
+    PIC_Remap(offset);
+
+    // Install the IRQs
+    SetIDTGateHandler(IRQ0, (uint32_t)irq0);
+    SetIDTGateHandler(IRQ1, (uint32_t)irq1);
+    SetIDTGateHandler(IRQ2, (uint32_t)irq2);
+    SetIDTGateHandler(IRQ3, (uint32_t)irq3);
+    SetIDTGateHandler(IRQ4, (uint32_t)irq4);
+    SetIDTGateHandler(IRQ5, (uint32_t)irq5);
+    SetIDTGateHandler(IRQ6, (uint32_t)irq6);
+    SetIDTGateHandler(IRQ7, (uint32_t)irq7);
+    SetIDTGateHandler(IRQ8, (uint32_t)irq8);
+    SetIDTGateHandler(IRQ9, (uint32_t)irq9);
+    SetIDTGateHandler(IRQ10, (uint32_t)irq10);
+    SetIDTGateHandler(IRQ11, (uint32_t)irq11);
+    SetIDTGateHandler(IRQ12, (uint32_t)irq12);
+    SetIDTGateHandler(IRQ13, (uint32_t)irq13);
+    SetIDTGateHandler(IRQ14, (uint32_t)irq14);
+    SetIDTGateHandler(IRQ15, (uint32_t)irq15);
+
+	LoadIDT(); // Load with ASM
+
+    EnableInterrupts();
 }
 
 void PIC_Remap(int offset)
@@ -135,7 +196,7 @@ void LoadIDT()
 {
     IDTReg.Base = (uint32_t) &IDT;
     IDTReg.Limit = IDT_ENTRIES * sizeof(IDTGate) - 1;
-    /* Don't make the mistake of loading &idt -- always load &idt_reg */
+
     asm volatile("lidt (%0)" : : "r" (&IDTReg));
 }
 
@@ -152,15 +213,25 @@ void SetIDTGateHandler(uint32_t gate, uint32_t handler)
     IDT[gate].HighOffset = (handler >> 16) & 0xffff;
 }
 
+void EnableInterrupts()
+{
+    asm volatile("sti");
+}
+
+void DisableInterrupts()
+{
+    asm volatile("cli");
+}
+
 void isr_handler(Registers *r) 
 {
-    vga_print_string("received interrupt: ");
+    VgaPrint("received interrupt: ");
     char s[3];
     int_to_string(r->IntNum, s);
-    vga_print_string(s);
-    vga_print_string("\n");
-    vga_print_string(ExceptionMessages[r->IntNum]);
-    vga_print_string("\n");
+    VgaPrint(s);
+    VgaPrint("\n");
+    VgaPrint(ExceptionMessages[r->IntNum]);
+    VgaPrint("\n");
 }
 
 int string_length(char s[]) {
