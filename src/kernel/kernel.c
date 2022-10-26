@@ -3,6 +3,9 @@
 #include "PIC.h"
 #include "clib/string.h"
 
+#define COMMAND_BUFFER_SIZE 60
+char s_Command[COMMAND_BUFFER_SIZE] = { 0 };
+
 void print_letter(uint8_t scancode) {
     switch (scancode) {
         case 0x0:
@@ -193,25 +196,166 @@ void print_letter(uint8_t scancode) {
     }
 }
 
+char ScancodeToASCII(uint8_t scancode)
+{
+    switch (scancode) 
+    {
+        case 0x00: return '?'; // Error
+        case 0x01: return '?'; // Escape
+        case 0x02: return '1';
+        case 0x03: return '2';
+        case 0x04: return '3';
+        case 0x05: return '4';
+        case 0x06: return '5';
+        case 0x07: return '6';
+        case 0x08: return '7';
+        case 0x09: return '8';
+        case 0x0A: return '9';
+        case 0x0B: return '0';
+        case 0x0C: return '-';
+        case 0x0D: return '+';
+        case 0x0E: return '\b'; // Backspace
+        case 0x0F: return '\t';
+        case 0x10: return 'Q';
+        case 0x11: return 'W';
+        case 0x12: return 'E';
+        case 0x13: return 'R';
+        case 0x14: return 'T';
+        case 0x15: return 'Y';
+        case 0x16: return 'U';
+        case 0x17: return 'I';
+        case 0x18: return 'O';
+        case 0x19: return 'P';
+        case 0x1A: return '[';
+        case 0x1B: return ']';
+        case 0x1C: return '\n'; // Enter
+        case 0x1D: return '?'; // Left control
+        case 0x1E: return 'A';
+        case 0x1F: return 'S';
+        case 0x20: return 'D';
+        case 0x21: return 'F';
+        case 0x22: return 'G';
+        case 0x23: return 'H';
+        case 0x24: return 'J';
+        case 0x25: return 'K';
+        case 0x26: return 'L';
+        case 0x27: return ';';
+        case 0x28: return '\'';
+        case 0x29: return '`';
+        case 0x2A: return '?'; // Left shift
+        case 0x2B: return '\\';
+        case 0x2C: return 'Z';
+        case 0x2D: return 'X';
+        case 0x2E: return 'C';
+        case 0x2F: return 'V';
+        case 0x30: return 'B';
+        case 0x31: return 'N';
+        case 0x32: return 'M';
+        case 0x33: return ',';
+        case 0x34: return '.';
+        case 0x35: return '/';
+        case 0x36: return '?'; // Right shift
+        case 0x37: return '*'; // Keypad *
+        case 0x38: return '?'; // Left alt
+        case 0x39: return ' ';
+        default:   return '?';
+    }
+}
+
+void ProcessCommand()
+{
+    if(!StringCompare(s_Command, "HELP"))
+    {
+        VgaPrint("Welcome to Sarabi OS. If you need any help, you can't get it :(\n");
+    }
+    else if(!StringCompare(s_Command, "CLEAR"))
+    {
+        VgaClear();
+    }
+    else if(!StringCompare(s_Command, "LOL"))
+    {
+        const char* message = "    .-''''-.\n"
+                            "   /        \\\n"
+                            "  /_        _\\\n"
+                            " // \\      / \\\\\n"
+                            " |\\__\\    /__/|\n"
+                            "  \\    ||    /\n"
+                            "   \\        /\n"
+                            "    \\  __  / \n"
+                            "     '.__.'\n"
+                            "      |  |\n"
+                            "      |  |\n";
+
+        ColorPair color;
+        color.Foreground = VGA_COLOR_GREEN;
+        color.Background = VgaGetBackgroundColor();
+
+        VgaPrintColored(message, color);
+    }
+    else 
+    {
+        ColorPair currentColor = VgaGetColor();
+        ColorPair messageColor;
+        messageColor.Foreground = VGA_COLOR_YELLOW;
+        messageColor.Background = currentColor.Background;
+
+        VgaPrintColored("Unknown command '", messageColor);
+        VgaPrintColored(s_Command, messageColor);
+        VgaPrintColored("'!\n", messageColor);
+    }
+}
+
 void keyboard_callback(Registers *regs) {
     uint8_t scancode = InPort(0x60);
+    char c = ScancodeToASCII(scancode);
 
-    if (scancode <= 0x7f)
-        print_letter(scancode);
+    if(c == '\n')
+    {
+        VgaPrint("\n");
+
+        if(!StringEmpty(s_Command))
+        {    
+            ProcessCommand();
+
+            s_Command[0] = '\0';
+        }
+
+        VgaPrint(">> ");
+        
+    }
+    else if(c == '\b')
+    {
+        int len = StringLength(s_Command);
+        if(len > 0)
+        {
+            s_Command[len - 1] = '\0';
+            VgaBackspace();
+        }
+            
+    }
+    else if (scancode <= 0x7f)
+    {
+        if(StringLength(s_Command) < COMMAND_BUFFER_SIZE - 1)
+        {
+            StringAppend(s_Command, c);
+
+            char str[2] = { c, '\0' };
+            VgaPrint(str);
+        }
+    }        
 }
 
 int kmain()
-{    
-	VgaHeaderMessage("Sarabi OS");
-    VgaFooterMessage("This is some useful and helpful information");
+{   
     VgaClear();
+    VgaHeaderMessage("Sarabi OS");
+    VgaFooterMessage("This is some useful and helpful information");
     
-    VgaPrint("Hello world");
-
 	PIC_Init(0x20);
     
 	register_interrupt_handler(IRQ1, keyboard_callback);
-	
+
+    VgaPrint(">> ");
     asm volatile ("hlt");
 
  	return 0;

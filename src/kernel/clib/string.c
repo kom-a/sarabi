@@ -24,3 +24,21 @@ void StringCopy(char* dest, const char* src)
 
     *dest = '\0';
 }
+
+int StringCompare(const char* s1, const char* s2)
+{
+    int i;
+
+    for (i = 0; s1[i] == s2[i]; i++)
+    {
+        if (s1[i] == '\0') 
+            return 0;
+    }
+
+    return s1[i] - s2[i];
+}
+
+int StringEmpty(const char* str)
+{
+    return str[0] == '\0';
+}

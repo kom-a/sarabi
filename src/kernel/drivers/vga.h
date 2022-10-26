@@ -48,9 +48,12 @@ ColorPair VgaGetColorFooter();
 void VgaSetColor(ColorPair color);
 void VgaSetColorHeader(ColorPair color);
 void VgaSetColorFooter(ColorPair color);
+int VgaGetForegroundColor();
+int VgaGetBackgroundColor();
 
 void VgaPrint(const char* string);
 void VgaPrintColored(const char* string, ColorPair color);
+void VgaBackspace();
 
 void VgaHeaderMessage(const char* headerMessage);
 void VgaFooterMessage(const char* footerMessage);
