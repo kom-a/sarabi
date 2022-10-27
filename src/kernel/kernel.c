@@ -266,7 +266,7 @@ void ProcessCommand()
 {
     if(!StringCompare(s_Command, "HELP"))
     {
-        VgaPrint("Welcome to Sarabi OS. If you need any help, you can't get it :(\n");
+        VgaPrint("Welcome to Sarabi OS.\nIf you need any help, you can't get it :(\n");
     }
     else if(!StringCompare(s_Command, "CLEAR"))
     {
@@ -291,6 +291,86 @@ void ProcessCommand()
         color.Background = VgaGetBackgroundColor();
 
         VgaPrintColored(message, color);
+    }
+    else if (!StringCompare(s_Command, "SARABI"))
+    {
+        ColorPair brown = { VGA_COLOR_BROWN, VgaGetBackgroundColor() };
+        ColorPair yellow = { VGA_COLOR_YELLOW, VgaGetBackgroundColor() };
+        ColorPair white = { VGA_COLOR_WHITE, VgaGetBackgroundColor() };
+        ColorPair red = { VGA_COLOR_LIGHTRED, VgaGetBackgroundColor() };
+
+        VgaPrintColored("       =4c,.\n", brown);
+
+        VgaPrintColored("   ,dP""-`$$$c\n", brown);
+
+        VgaPrintColored(" ,$\" ,!!! $$$$$c,. .,,.\n", brown);
+
+        VgaPrintColored(",P',!!!!!>?$$$$$$$$$$$$$$$$$cc,\n", brown);
+
+        VgaPrintColored("d  <!!!'-  $$$$$$$$$$$$$$$$$$$$$$c, .,,,ccccc,\n", brown);
+
+        VgaPrintColored("4$'`!!!!>  `$P\".,.\"$$$$$$$$$$$$$$$$b,\"$$$$\"  ?c,\n", brown);
+
+        VgaPrintColored(" ?c '!!!:',$\"", brown);
+        VgaPrintColored(",$$$$$c", yellow);
+        VgaPrintColored("\"$$$$$$$$$$$$$$$$c`?""-!> $F\n", brown);
+
+        VgaPrintColored("  `\"bc,``,$F", brown);
+        VgaPrintColored(",$\"\" `\"$b", yellow);
+        VgaPrintColored("`$$$$$$$$$$$$$$$P\" <;`!> $'\n", brown);
+
+        VgaPrintColored("      `\" $$ ,\"", brown);
+        VgaPrintColored(",??$c", white);
+        VgaPrintColored("`$c", yellow);
+        VgaPrintColored("~$$$$$$$$$$$$\"", brown);
+        VgaPrintColored(",c$b ~ ',d'\n", brown);
+
+        VgaPrintColored("        d$$F", brown);
+        VgaPrintColored("3     ", yellow);
+        VgaPrintColored("3F", white);
+        VgaPrintColored("$$ ", yellow);
+        VgaPrintColored("$$$$$$$$$$P  ", brown);
+        VgaPrintColored("\"?$ ", white);
+        VgaPrintColored("<r=\"\n", brown);
+
+        VgaPrintColored("        $$$$c", brown);
+        VgaPrintColored("/.   ", yellow);
+        VgaPrintColored(",\"", white);
+        VgaPrintColored("$'", yellow);
+        VgaPrintColored("J$$$$$$$$$$  ", brown);
+        VgaPrintColored("\"?$ ", white);
+        VgaPrintColored("<r=\"\n", brown);
+
+        VgaPrintColored("        $$$$$$c   \"`", brown);
+        VgaPrintColored("P", yellow);
+        VgaPrintColored(",$$$$$$$$$$F    ", brown);
+        VgaPrintColored(",\"\n", yellow);
+        
+        VgaPrintColored("        `$$$$$$$$be..$?$$$$$$$$$b .,,c$\n", brown);
+
+        VgaPrintColored("         `?$$$$$$$$$$\",\"???$$$$$$c3$$$P\n", brown);
+
+        VgaPrintColored("           \"?$$$$$\" ", brown);
+        VgaPrintColored("4$$c,", yellow);
+        VgaPrintColored("`::.", red);
+        VgaPrintColored("\"\"", brown);
+        VgaPrintColored(".- ", red);
+        VgaPrintColored("4$P\"\n", brown);
+
+        VgaPrintColored("              \"?$$$ ", brown);
+        VgaPrintColored("~$$$$$c,", yellow);
+        VgaPrintColored("`", red);
+        VgaPrintColored(",ccP ", yellow);
+        VgaPrintColored("`\n", brown);
+
+        VgaPrintColored("                ", brown);
+        VgaPrintColored("`\"\"db,\"\"\"\"`\"`??\"\n", yellow);
+
+        VgaPrintColored("                   $$$$$$$$$$$$'\n", yellow);
+
+        VgaPrintColored("                   \"$$$$$$$$$$\"\n", yellow);
+
+        VgaPrintColored("                      .\"??\"\"\"\n\n", yellow);
     }
     else 
     {
