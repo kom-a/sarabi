@@ -3,6 +3,8 @@
 #include "PIC.h"
 #include "clib/string.h"
 
+#include "games/pong.h"
+
 #define COMMAND_BUFFER_SIZE 60
 char s_Command[COMMAND_BUFFER_SIZE] = { 0 };
 
@@ -266,7 +268,7 @@ void ProcessCommand()
 {
     if(!StringCompare(s_Command, "HELP"))
     {
-        VgaPrint("Welcome to Sarabi OS.\nIf you need any help, you can't get it :(\n");
+        VgaPrint("Welcome to Sarabi OS.\nIf you need any help, you won't get it :(\n");
     }
     else if(!StringCompare(s_Command, "CLEAR"))
     {
@@ -372,6 +374,10 @@ void ProcessCommand()
 
         VgaPrintColored("                      .\"??\"\"\"\n\n", yellow);
     }
+    else if(!StringCompare(s_Command, "PONG"))
+    {
+        PongGameLoop();
+    }
     else 
     {
         ColorPair currentColor = VgaGetColor();
@@ -400,7 +406,8 @@ void keyboard_callback(Registers *regs) {
             s_Command[0] = '\0';
         }
 
-        VgaPrint(">> ");
+        VgaPrint("R:/ >> ");
+
         
     }
     else if(c == '\b')
@@ -435,7 +442,7 @@ int kmain()
     
 	register_interrupt_handler(IRQ1, keyboard_callback);
 
-    VgaPrint(">> ");
+    VgaPrint("R:/ >> ");
     asm volatile ("hlt");
 
  	return 0;

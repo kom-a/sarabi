@@ -21,12 +21,16 @@ gcc -ffreestanding -m32 -fno-pie -c driver.c -o $BUILD_DIR/driver.o
 gcc -ffreestanding -m32 -fno-pie -c vga.c -o $BUILD_DIR/vga.o
 popd
 
+pushd $SRC_DIR/kernel/games > /dev/null
+gcc -ffreestanding -m32 -fno-pie -c pong.c -o $BUILD_DIR/pong.o
+popd
+
 pushd $SRC_DIR/kernel/clib > /dev/null
 gcc -ffreestanding -m32 -fno-pie -c string.c -o $BUILD_DIR/string.o
 popd
 
 pushd bin > /dev/null
-ld -o kernel.bin -T ../link.ld -m elf_i386 -s kernel_entry.o kernel.o driver.o vga.o PIC.o string.o --oformat binary
+ld -o kernel.bin -T ../link.ld -m elf_i386 -s kernel_entry.o kernel.o driver.o vga.o PIC.o string.o pong.o --oformat binary
 cat boot.o kernel.bin > sarabi
 truncate -s 32000 sarabi
 popd > /dev/null
